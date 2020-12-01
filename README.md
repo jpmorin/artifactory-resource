@@ -15,6 +15,7 @@ This integration allows:
 - `repository_id`: *Required.* The repository
 - `group_id`: *Required.* The maven groupId of your artifact
 - `artifact_id`: *Required.* The maven artifactId of your artifact
+- `version`: *Optionnal.* Retreive specific version of your artifact
 
 ### Example
 
@@ -52,6 +53,19 @@ Retreiving artifacts:
 - get: my-artifact
   params:
     qualifiers: [sources,javadoc]
+```
+
+``` yaml
+- get: my-artifact
+  params:
+    qualifiers: [archive]
+    extract_pattern: ['*-archive.tar.gz']
+```
+
+``` yaml
+- get: my-artifact
+  params:
+    version: 1.0.0-rc.1
 ```
 
 Pushing local commits to the repo:
@@ -98,11 +112,13 @@ Download the artifacts of the given ref to the destination. It will return the s
 
 #### Parameters
 
-- `qualifiers`: *Optional.* The artifacts classifiers ex: [source,javadoc]. If specified, the resource will only retreive the qualified artifacts.
+- `qualifiers`: *Optional.* The artifacts classifiers ex: `[source, javadoc]`. If specified, the resource will only retreive the qualified artifacts.
+- `extract_pattern`: *Optional.* Glob pattern of archives to extract ex: `['*.tar.gz']`. If specified, the matching archives will be extracted.
+- `version`: *Optionnal.* Retreive specific version of your artifact. (superseed `source.version`)
 
 ### `out`: Push the artifacts to the repository
 
-Push the artifacts from the given path to the Artifactory maven repository. The resource will push every files presents in the folder specified in the **path** parameter. The version parameter is optionnal but the resource expect at least a version file containing a version in the format of a valid maven versions (See https://cwiki.apache.org/confluence/display/MAVENOLD/Versioning for details).
+Push the artifacts from the given path to the Artifactory maven repository. The resource will push every files presents in the folder specified in the **path** parameter. The version parameter is optionnal but the resource expect at least a version file containing a version in the format of a valid maven versions (See <https://cwiki.apache.org/confluence/display/MAVENOLD/Versioning> for details).
 
 Optionally upload build information by setting the `build_upload` flag to `true`. The resource will produce a build.json file and [upload it to artifactory](https://www.jfrog.com/confluence/display/RTF/Artifactory+REST+API#ArtifactoryRESTAPI-BuildUpload). The build name will default to `<source.artifact_id>-build` and the build number will be set to [concourse's `$BUILD_ID` metadata value](https://concourse-ci.org/implementing-resource-types.html#resource-metadata).
 

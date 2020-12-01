@@ -2,6 +2,7 @@
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
 strip_last_slash() {
@@ -97,7 +98,7 @@ get_latest_version() {
         --write-out "\n%{http_code}" \
         --silent \
         ${host}/api/search/aql)
-  
+
     http_code="${result_folder##*$'\n'}"
     req_folder=$(echo "${result_folder}" | sed '$d')
 
@@ -159,7 +160,7 @@ folder_metadata() {
         --write-out "\n%{http_code}" \
         --silent \
         ${host}/api/search/aql)
-  
+
     http_code="${result_folder##*$'\n'}"
     req_folder=$(echo "${result_folder}" | sed '$d')
 
