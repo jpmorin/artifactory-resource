@@ -21,13 +21,32 @@ payload=$(mktemp ${TMPDIR}/artifactory-resource-request.XXXXXX)
 
 cat > $payload <&0
 
+# version
+version=$(jq -r '.version.ref // ""' < ${payload})
+
+# source
 api_key=$(jq -r '.source.api_key // ""' < ${payload})
 repository_id=$(jq -r '.source.repository_id // ""' < ${payload})
 group_id=$(jq -r '.source.group_id // ""' < ${payload})
 artifact_id=$(jq -r '.source.artifact_id // ""' < ${payload})
 host=$(jq -r '.source.host // ""' < ${payload})
-version=$(jq -r '.version.ref // ""' < ${payload})
+version_source=$(jq -r '.source.version // ""' < ${payload})
+
+# params
 qualifiers_param=$(jq -r '.params // {}|.qualifiers // []|join(" ")' < ${payload})
+extract_pattern_param=$(jq -r '.params // {}|.extract_pattern // []|join(" ")' < ${payload})
+version_param=$(jq -r '.params.version // ""' < ${payload})
+
+# superseed order: params.version > source.version > version.ref
+if [[ -n "${version_param}" ]]; then
+  echo -e "${GREEN}Using params.version: ${CYAN}${version_param}${NC}" >&2
+  version=${version_param}
+elif [[ -n "${version_source}" ]]; then
+  echo -e "${GREEN}Using source.version: ${CYAN}${version_source}${NC}" >&2
+  version=${version_source}
+else
+  echo -e "${GREEN}Using latest version: ${CYAN}${version}${NC}" >&2
+fi
 
 is_valid 'api_key' "${api_key}"
 is_valid 'repository_id' "${repository_id}"
@@ -87,10 +106,19 @@ if [[ ${http_code} -eq '200' ]]; then
   metadata_folder=$(folder_metadata "${payload}" "${destination}" "${version}")
   metadata_files=$(echo ${req_files} | jq '[[.results[].name]|to_entries[]|{name: "file_\(.key)", value}]')
   echo $(echo "\"${version}\"" | jq "{version: {ref: .}, metadata: $(echo ${metadata_folder} | jq ". + ${metadata_files}")}") >&3
-  exit 0
+
 else
   echo "Unable to retreive files in artifactory" >&2
   echo "Request: curl -k -X POST -H 'X-JFrog-Art-Api:*****' -H 'Content-Type:text/plain' -d "${aql_files}" --write-out "\n%{http_code}" --silent ${host}/api/search/aql" >&2
   echo "Error:${req_files}" >&2
   exit 1
+fi
+
+if [[ -n "${extract_pattern_param}" ]]; then
+  cd ${destination}
+    for f in ${extract_pattern_param}; do
+      echo -e "\n${GREEN}Extraction of archive ${CYAN}'$f'${GREEN}:${NC}" >&2
+      tar -xv -f $f
+    done
+  cd - >/dev/null
 fi

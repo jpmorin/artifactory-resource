@@ -2,12 +2,12 @@ FROM golang:alpine AS builder
 
 COPY go/ /go/
 ENV CGO_ENABLED 0
-ENV GOOS linux 
+ENV GOOS linux
 ENV GOARCH amd64
 RUN go build -a -ldflags="-w -s" -o /go/bin/sort-versions github.com/emerald-squad/artifactory-resource/sort-versions
 RUN go test github.com/emerald-squad/artifactory-resource/sort-versions/versioning
 
-FROM alpine:edge AS resource
+FROM alpine:3.12 AS resource
 
 RUN apk --no-cache add \
       curl \
